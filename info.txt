@@ -1,0 +1,2 @@
+GENERAR .EXE
+https://www.section.io/engineering-education/compile-your-nodejs-application-into-a-exe-file/
