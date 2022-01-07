@@ -40,15 +40,15 @@ const sendmail = async () => {
 		service: 'gmail',
 		auth: {
 		  user: 'fabianmayoral@gmail.com',
-		  pass: 'pepe1234'
+		  pass: 'hlifqsybfpzmzbvq'
 		}
 	  });
 	  
 	  var mailOptions = {
 		from: 'fabianmayoral@gmail.com',
 		to: 'fabianmayoral@hotmail.com',
-		subject: 'Sending Email using Node.js',
-		text: 'That was easy!'
+		subject: 'TURNO DISPONIBLE',
+		text: 'Al parecer hay un turno disponible. APURATE!'
 	  };
 	  
 	  transporter.sendMail(mailOptions, function(error, info){
@@ -62,7 +62,8 @@ const sendmail = async () => {
 
 const runAutoDeploy = async () => {
     try {
-    	/*while(1)
+		/*
+    	while(1)
     	{
     		
 	    	const puppeteer = require('puppeteer');
@@ -164,8 +165,6 @@ const runAutoDeploy = async () => {
 
 			console.log(value);
 
-			// sendmail();
-
 			var date = new Date();
 			var current_hour = date.getHours();
 			var current_minutes = date.getMinutes();
@@ -184,12 +183,18 @@ const runAutoDeploy = async () => {
 
 			await browser.close()
 			await setTimeoutPromise(600000);
-			
 		}
 		*/
-		var myArgs = process.argv.slice(2);
-		console.log(myArgs);
-		/*
+    } catch(error) {
+        console.log(error)
+		sendmail();
+        await setTimeoutPromise(600000);
+        runAutoDeploy()
+    }
+}
+
+const getProvincias = async () => {
+	try{
 		const puppeteer = require('puppeteer');
 		const browser = await puppeteer.launch()
 		const page = await browser.newPage()
@@ -201,21 +206,29 @@ const runAutoDeploy = async () => {
 
 		await page.waitForSelector('#form')
 		await page.click('#form')
-		
+
 		// Muestro las provincias
 		const elements = await page.$$("#form option");
 		elements.forEach(async element => {
-			const text = await (await element.getProperty("innerText")).jsonValue() + ' = ' + await (await element.getProperty("value")).jsonValue();
-			console.log(await text);
+			//const text = await (await element.getProperty("innerText")).jsonValue() + ' = ' + await (await element.getProperty("value")).jsonValue();
+			const text = await (await element.getProperty("innerText")).jsonValue();
+			console.log(text);
 		});
-		*/
-		sendmail()
-    } catch(error) {
+		console.log("fin")
+		await browser.close()
+	} catch(error) {
         console.log(error)
-        await setTimeoutPromise(600000);
-        runAutoDeploy()
     }
 }
 
-runAutoDeploy()
-//setInterval(runAutoDeploy, 60000);
+var myArgs = process.argv.slice(2);
+console.log(myArgs);
+if(!myArgs || myArgs.length < 1)
+{
+	//getProvincias()
+	makeSound()
+}
+else
+{
+	runAutoDeploy()
+}
