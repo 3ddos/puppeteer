@@ -108,7 +108,7 @@ const sendmail = async () => {
 	  
 	  var mailOptions = {
 		from: 'fabianmayoral@gmail.com',
-		to: 'fabianmayoral@hotmail.com',
+		to: 'mf.nuet@gmail.com',
 		subject: 'TURNO DISPONIBLE',
 		text: 'Al parecer hay un turno disponible. APURATE!'
 	  };
