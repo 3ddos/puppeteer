@@ -229,13 +229,13 @@ const runAutoDeploy = async (prov) => {
 			await page.click('#txtPaisNac')
 
 			await page.select('#txtPaisNac', '202')
-
+			/*
 			await page.waitForSelector('#txtParentesco')
 			await page.click('#txtParentesco')
 
 			//await page.select('#txtParentesco', 'C\u00D3NYUGE')
 			await page.select('#txtParentesco', 'HIJO')
-
+			*/
 			await page.screenshot({ path: 'paso3.png', fullPage: true });
 
 			await page.waitForSelector('#btnEnviar')
