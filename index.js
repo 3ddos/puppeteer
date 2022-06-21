@@ -8,6 +8,7 @@
 const puppeteer = require('puppeteer')
 //const fetch = require('node-fetch')
 const { exec } = require('child_process')
+const readline = require('readline');
 
 // Opciones para la ejecución de Puppeteer
 const PUPPETEER_OPTS = {
@@ -15,6 +16,24 @@ const PUPPETEER_OPTS = {
     slowMo: { default: 300, click: 200, keyup: 10 },
     devtools: false,
 }
+
+function askQuestion(query) {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+
+    return new Promise(resolve => rl.question(query, ans => {
+        rl.close();
+        resolve(ans);
+    }))
+}
+
+function delay(time) {
+	return new Promise(function(resolve) { 
+		setTimeout(resolve, time)
+	});
+ }
 
 const provincias = [
 {name:'A Coruña', value: '/icpplus/citar?p=15&locale=es'},
@@ -108,7 +127,7 @@ const sendmail = async () => {
 	  
 	  var mailOptions = {
 		from: 'fabianmayoral@gmail.com',
-		to: 'mf.nuet@gmail.com',
+		to: 'fabianmayoral@hotmail.com',
 		subject: 'TURNO DISPONIBLE',
 		text: 'Al parecer hay un turno disponible. APURATE!'
 	  };
@@ -122,76 +141,125 @@ const sendmail = async () => {
 	  }); 
 }
 
+async function showOptions(elements) {
+	/*
+	elements.forEach(async element => {
+		try{
+			//const text = await (await element.getProperty("innerText")).jsonValue() + ' = ' + await (await element.getProperty("value")).jsonValue();
+			const text = await element.getProperty("innerText");
+			const text1 = await text.jsonValue()
+			items.push(text1)
+			console.log(text1)
+		} catch(err){
+			console.log(err);
+		}
+	})
+	*/
+	for(i=0; i<elements.length; i++){
+		//const text = await elements[i].getProperty("innerText");
+		//const text1 = await text.jsonValue()
+		const text = await (await elements[i].getProperty("innerText")).jsonValue() + ' = ' + await (await elements[i].getProperty("value")).jsonValue();
+		console.log(text);
+	}
+	const ans = await askQuestion("Escriba la opción deseada: ");
+	return ans
+}
+
+async function getAllSelects(){
+	console.log('getAllSelects')
+	const elements = await page.$$("select")
+	
+	for(i=0; i<elements.length; i++){
+		const algo = await elements[i].$$("option")
+		const answer = await showOptions(algo)
+		
+		await page.select("select", answer) // Alicante
+	}
+
+	console.log('termino getAll')
+}
+
+async function selectWithSelector(selector){
+	try {
+		console.log(`waiting for selector ${selector}`)
+		await page.waitForSelector(selector)
+		await page.click(selector)
+
+		const tramite_seleccionado = buscarOpcionSeleccionada(selector)
+		if(tramite_seleccionado)
+		{
+			await page.select(selector, tramite_seleccionado.value)
+		}
+		else
+		{
+			// Muestro los tramites
+			const elements = await page.$$(selector + " option");
+			const answer = await showOptions(elements)
+			inputs.push({key:selector, value:answer})
+			if(answer !== '')
+			{
+				await page.select(selector, answer) // Alicante
+			}
+			else{
+				console.log(`The input ${selector} is empty.`)
+			}
+		}
+	} catch (error) {
+		console.log(`The input ${selector} didn't appear.`)
+	}
+}
+
+async function completeInput(selector, value){
+	try {
+		await page.waitForSelector(selector)
+		await page.click(selector)
+		await page.$eval(selector, el => el.value = value);
+	} catch (error) {
+		console.log(`The input ${selector} didn't appear.`)
+	}
+}
+
+function buscarOpcionSeleccionada(selector){
+	return inputs.find(item => item.key===selector)
+}
+
+
 const runAutoDeploy = async (prov) => {
     try {
-		
     	while(1)
     	{
-    		
 	    	const puppeteer = require('puppeteer');
 			const browser = await puppeteer.launch()
-			const page = await browser.newPage()
+			page = await browser.newPage()
 			const navigationPromise = page.waitForNavigation()
 
 			await page.goto('https://sede.administracionespublicas.gob.es/icpplus/index.html')
 
 			await page.setViewport({ width: 1366, height: 1366 })
-
-			await page.waitForSelector('#form')
-			await page.click('#form')
-
-			if(provincia_seleccionada)
-			{
-				await page.select('#form', provincia_seleccionada.value) // Alicante
-			}
-			else
-			{
-				// Muestro las provincias
-				const elements = await page.$$("#form option");
-				elements.forEach(async element => {
-					try{
-						//const text = await (await element.getProperty("innerText")).jsonValue() + ' = ' + await (await element.getProperty("value")).jsonValue();
-						const text = await (await element.getProperty("innerText")).jsonValue();
-						console.log(text);
-					} catch(err){
-						console.log(err);
-					}
-				});
-			}
-
-			await page.waitForSelector('#form')
-			await page.click('#form')
+			
+			await selectWithSelector('#form')
+			
+			//await getAllSelects()
 
 			await page.waitForSelector('#btnAceptar')
 			await page.click('#btnAceptar')
 
 			await navigationPromise
 
+			await delay(2000)
 			console.log('paso 1');
-
-			await page.waitForSelector(".mf-input__l")
-			await page.click('.mf-input__l')
-
-			if(tramite_seleccionado)
-			{
-				await page.select('.mf-input__l', tramite_seleccionado) // FAMILIARES DE RESIDENTES COMUNITARIOS
-			}
-			else
-			{
-				// Muestro los tramites
-				const elements = await page.$$(".mf-input__l option");
-				elements.forEach(async element => {
-					try{
-						const text = await (await element.getProperty("innerText")).jsonValue() + ' = ' + await (await element.getProperty("value")).jsonValue();
-						//const text = await (await element.getProperty("innerText")).jsonValue();
-						console.log(text);
-					} catch(err){
-						console.log(err);
-					}
-				});
-			}
-
+			await page.screenshot({ path: 'paso1-vacio.png', fullPage: true });
 			
+			// SEDE
+			await selectWithSelector('#sede')
+
+			await delay(2000)
+			
+			// TRAMITE 0
+			await selectWithSelector('[id="tramiteGrupo[0]"]')
+
+			// TRAMITE 1
+			await selectWithSelector('[id="tramiteGrupo[1]"]')
 
 			await page.screenshot({ path: 'paso1.png', fullPage: true });
 
@@ -213,17 +281,9 @@ const runAutoDeploy = async (prov) => {
 			await page.waitForSelector('.fld > fieldset > .radio-list > li > .w100')
 			await page.click('.fld > fieldset > .radio-list > li > .w100') // PASAPORTE
 
-			await page.waitForSelector('#txtIdCitado')
-			await page.click('#txtIdCitado')
-			await page.$eval('#txtIdCitado', el => el.value = 'AAE123456');
-
-			await page.waitForSelector('#txtDesCitado')
-			await page.click('#txtDesCitado')
-			await page.$eval('#txtDesCitado', el => el.value = 'PETER ALFONSO');
-
-			await page.waitForSelector('#txtAnnoCitado')
-			await page.click('#txtAnnoCitado')
-			await page.$eval('#txtAnnoCitado', el => el.value = '1980');
+			await completeInput('#txtIdCitado', 'AAE123456')
+			await completeInput('#txtDesCitado', 'PETER ALFONSO')
+			await completeInput('#txtAnnoCitado', '1980')
 
 			await page.waitForSelector('#txtPaisNac')
 			await page.click('#txtPaisNac')
@@ -285,8 +345,8 @@ const runAutoDeploy = async (prov) => {
 		
     } catch(error) {
         console.log(error)
-		sendmail()
-		makeSound()
+		// sendmail()
+		// makeSound()
         await setTimeoutPromise(600000);
         runAutoDeploy()
     }
@@ -340,5 +400,9 @@ console.log(myArgs);
 
 provincia_seleccionada = buscar_provincia(myArgs[0])
 tramite_seleccionado = myArgs[1]
+
+let inputs = []
+
+let page = null
 
 runAutoDeploy()
