@@ -179,7 +179,7 @@ async function getAllSelects(){
 	console.log('termino getAll')
 }
 
-async function selectWithSelector(selector){
+async function selectWithSelector(page, selector){
 	try {
 		console.log(`waiting for selector ${selector}`)
 		await page.waitForSelector(selector)
@@ -188,7 +188,13 @@ async function selectWithSelector(selector){
 		const tramite_seleccionado = buscarOpcionSeleccionada(selector)
 		if(tramite_seleccionado)
 		{
-			await page.select(selector, tramite_seleccionado.value)
+			if(tramite_seleccionado.value !== '')
+			{
+				await page.select(selector, tramite_seleccionado.value)
+			}
+			else{
+				console.log(`The input ${selector} is empty.`)
+			}
 		}
 		else
 		{
@@ -209,7 +215,7 @@ async function selectWithSelector(selector){
 	}
 }
 
-async function completeInput(selector, value){
+async function completeInput(page, selector, value){
 	try {
 		await page.waitForSelector(selector)
 		await page.click(selector)
@@ -230,14 +236,14 @@ const runAutoDeploy = async (prov) => {
     	{
 	    	const puppeteer = require('puppeteer');
 			const browser = await puppeteer.launch()
-			page = await browser.newPage()
+			const page = await browser.newPage()
 			const navigationPromise = page.waitForNavigation()
 
 			await page.goto('https://sede.administracionespublicas.gob.es/icpplus/index.html')
 
 			await page.setViewport({ width: 1366, height: 1366 })
 			
-			await selectWithSelector('#form')
+			await selectWithSelector(page, '#form')
 			
 			//await getAllSelects()
 
@@ -246,20 +252,19 @@ const runAutoDeploy = async (prov) => {
 
 			await navigationPromise
 
-			await delay(2000)
 			console.log('paso 1');
-			await page.screenshot({ path: 'paso1-vacio.png', fullPage: true });
+			await delay(5000)
 			
 			// SEDE
-			await selectWithSelector('#sede')
+			await selectWithSelector(page, '#sede')
 
 			await delay(2000)
 			
 			// TRAMITE 0
-			await selectWithSelector('[id="tramiteGrupo[0]"]')
+			await selectWithSelector(page, '[id="tramiteGrupo[0]"]')
 
 			// TRAMITE 1
-			await selectWithSelector('[id="tramiteGrupo[1]"]')
+			await selectWithSelector(page, '[id="tramiteGrupo[1]"]')
 
 			await page.screenshot({ path: 'paso1.png', fullPage: true });
 
@@ -269,6 +274,8 @@ const runAutoDeploy = async (prov) => {
 			await navigationPromise
 
 			console.log('paso 2');
+			await delay(5000)
+
 			await page.screenshot({ path: 'paso2.png', fullPage: true });
 
 			await page.waitForSelector('#btnEntrar')
@@ -277,17 +284,42 @@ const runAutoDeploy = async (prov) => {
 			await navigationPromise
 
 			console.log('paso 3');
+			await delay(5000)
 
 			await page.waitForSelector('.fld > fieldset > .radio-list > li > .w100')
 			await page.click('.fld > fieldset > .radio-list > li > .w100') // PASAPORTE
 
-			await completeInput('#txtIdCitado', 'AAE123456')
-			await completeInput('#txtDesCitado', 'PETER ALFONSO')
-			await completeInput('#txtAnnoCitado', '1980')
+			await delay(2000)
+			
+			//await completeInput(page, '#txtIdCitado', 'AAE123456')
+			try {
+				await page.waitForSelector('#txtIdCitado')
+				await page.click('#txtIdCitado')
+				await page.$eval('#txtIdCitado', el => el.value = 'AAE123456');
+			} catch (error) {
+				console.log(`The input #txtIdCitado didn't appear.`)
+			}
+
+			//await completeInput(page, '#txtDesCitado', 'PETER ALFONSO')
+			try {
+				await page.waitForSelector('#txtDesCitado')
+				await page.click('#txtDesCitado')
+				await page.$eval('#txtDesCitado', el => el.value = 'PETER ALFONSO');
+			} catch (error) {
+				console.log(`The input #txtDesCitado didn't appear.`)
+			}
+
+			//await completeInput(page, '#txtAnnoCitado', '1980')
+			try {
+				await page.waitForSelector('#txtAnnoCitado')
+				await page.click('#txtAnnoCitado')
+				await page.$eval('#txtAnnoCitado', el => el.value = '1980');
+			} catch (error) {
+				console.log(`The input #txtAnnoCitado didn't appear.`)
+			}
 
 			await page.waitForSelector('#txtPaisNac')
 			await page.click('#txtPaisNac')
-
 			await page.select('#txtPaisNac', '202')
 			/*
 			await page.waitForSelector('#txtParentesco')
@@ -304,6 +336,8 @@ const runAutoDeploy = async (prov) => {
 			await navigationPromise
 
 			console.log('paso 4');
+			await delay(2000)
+
 			await page.screenshot({ path: 'paso4.png', fullPage: true });
 
 			await page.waitForSelector('#btnEnviar')
@@ -312,6 +346,7 @@ const runAutoDeploy = async (prov) => {
 			await navigationPromise
 
 			console.log('paso 5');
+			await delay(2000)
 
 			await page.screenshot({ path: 'paso5.png', fullPage: true });
 
@@ -345,8 +380,8 @@ const runAutoDeploy = async (prov) => {
 		
     } catch(error) {
         console.log(error)
-		// sendmail()
-		// makeSound()
+		sendmail()
+		makeSound()
         await setTimeoutPromise(600000);
         runAutoDeploy()
     }
@@ -402,7 +437,5 @@ provincia_seleccionada = buscar_provincia(myArgs[0])
 tramite_seleccionado = myArgs[1]
 
 let inputs = []
-
-let page = null
 
 runAutoDeploy()
