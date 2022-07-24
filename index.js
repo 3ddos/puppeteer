@@ -318,9 +318,14 @@ const runAutoDeploy = async (prov) => {
 				console.log(`The input #txtAnnoCitado didn't appear.`)
 			}
 
-			await page.waitForSelector('#txtPaisNac')
-			await page.click('#txtPaisNac')
-			await page.select('#txtPaisNac', '202')
+			try {
+				await page.waitForSelector('#txtPaisNac')
+				await page.click('#txtPaisNac')
+				await page.select('#txtPaisNac', '202')
+			} catch (error) {
+				console.log(`The input #txtPaisNac didn't appear.`)
+			}
+
 			/*
 			await page.waitForSelector('#txtParentesco')
 			await page.click('#txtParentesco')
